@@ -13,7 +13,7 @@ step 3)  Repeat step2) for "C:\ImageJRibCage\Example1.DCM". It incorrecly detect
          lung's  area (left on the image) as explained in VaRibCage.rtf section "2.1
          non-working Example1.DCM". 
 
-Note: archive<s> named like WorkingSamples_DCM.zip contain test data series.
+Note: archive<s> like WorkingSamples_DCM.zip contain test data series.
 
 <!---
 jbstphr/jbstphr is a ✨ special ✨ repository because its `README.md` (this file) appears on your GitHub profile.
