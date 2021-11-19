@@ -4,7 +4,7 @@ macro "RibCage" { // begin of the macro
   // -- checkoops
   requires( "1.53k" ); // refer "https://imagej.nih.gov/ij/download.html", "Windows"
   list = getList( "image.titles" ); if (list.length<1)
-    exit( "It applies to active (16bit preferably) image.\nBut no one." );
+    exit( "It applies to active image (16bit preferably).\nBut no one." );
   nam_cur = getInfo( "image.filename" );
   if (startsWith( nam_cur, "$" ))
     exit( "It applies once.\nBut "+nam_cur+" seemingly is processed." );
@@ -22,25 +22,27 @@ macro "RibCage" { // begin of the macro
   if (bdh!=16)
     Dialog.addMessage( "Diagnostic industry-standard is 16bit. "+bdh+"bit voids output." );
   getStatistics( stt_n, stt_av, stt_mn, stt_mx ); 
-  Dialog.addMessage( "inp Image "+W+"x"+H+"  "+stt_mn+" < "+stt_av+" < "+stt_mx
-    +"\nCalc rough (by 8 dirs) descending Radon's laplapsians"
-    +"\n(preserving checked ~intercostals). Multiply the laps"
-    +"\nby 'Strength+const. Then subtract from original." );
-  Dialog.addCheckbox( "~arc (posteriors)", true );
-  Dialog.addCheckbox( "~concaves (clavicle, anteriors)", true );
-  Dialog.addSlider( "Strength", 0,15, 8 );
-  Dialog.addString( "Out's suffix (empty default):", "" );
-  Dialog.show();  adj = 0;
+  Dialog.addMessage( "Input image "+W+"x"+H+" (gamut "+stt_mn+"<"+stt_av+"<"+stt_mx+
+  ".\nSubtract Radon's laplacians (preserving checked intercostals):");
+  Dialog.addCheckbox( "arcs (~posteriors)", true );
+  Dialog.addCheckbox( "concaves (~clavicle, anteriors)", true );
+  Dialog.addCheckbox( "overpositivies (~roots; needs arcs=ON)", true );
+  Dialog.addSlider( "Attenuate subtraction (deflt=8)", 0,15, 8 );
+  Dialog.addSlider( "Attenuate lungs' pattern (0=none) ", 0,15, 10 );
+  Dialog.addString( "Output's suffix (deflt is empty):", "" );
+  Dialog.show(); adj = 0;
   if (Dialog.getCheckbox()) adj = adj|16;
   if (Dialog.getCheckbox()) adj = adj|32;
+  if (Dialog.getCheckbox()) adj = adj|64;
   adj = adj|Dialog.getNumber();
+  adj = adj|(256*Dialog.getNumber());
   nam = "$"+W+"x"+H+Dialog.getString(); 
   nam_inp = nam+".raw"; 
   nam_out = nam+"_00.raw";
 
   //-- execution
   setBatchMode( true );
-    print( "\\Clear" );  print( "- checked options code #"+adj+" // for "+nam_cur );
+    print( "\\Clear" );  print( "- adjustments' code "+toHex(adj)+" // for "+nam_cur );
     print( "- "+nam_inp+" // duplicate current image" );
   run( "Duplicate...", "title="+nam_inp ); selectWindow( nam_inp );
     print( "- IntelByteOrder // in Edit>Options>InputOutput>Save" );
@@ -48,7 +50,7 @@ macro "RibCage" { // begin of the macro
   saveSettings(); run( "Input/Output...", "save" );
   save( nam_inp ); restoreSettings(); close();
     print( "- waiting for "+nam_out+"... // it takes 5..30s" );
-  exec( nam_exe, W, H, nam_inp, "00", "10"+toHex(adj), "204" );
+  exec( nam_exe, W, H, nam_inp, "00", "10"+toHex(adj), "204" ); // flg 2?? requests AVX2
   setBatchMode( false );
 
   //-- open the output<s>
@@ -56,8 +58,7 @@ macro "RibCage" { // begin of the macro
     print( "- open "+nam_out+" // "+dsp_min+".."+dsp_max );
   run( "Raw...", "open="+nam_out+" image=[16-bit Unsigned] width="+W+" height="+H+" little-endian" );
     print( "- delete //"+nam_inp+","+nam_out ); 
-  setMinAndMax( dsp_min, dsp_max );
-  //File.delete( nam_inp ); File.delete( nam_out );
+  setMinAndMax( dsp_min, dsp_max );  File.delete( nam_inp );  File.delete( nam_out );
   if (bdh==8) run("8-bit"); // -- aux convesion 16bit=>8
   if (isOpen( "Log" )) { selectWindow( "Log" ); run( "Close" );   }
 
